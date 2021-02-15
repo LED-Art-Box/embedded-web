@@ -1,5 +1,28 @@
 # draw
 
+## Prerequisites
+
+- Python 3.9 or greater
+- pipenv
+
+## Common Tasks
+
+The common tasks are executable via the `go` script.
+
+To see what it can do, call:
+
+```sh
+./go
+
+
+# compiling the firmware
+./go build
+
+# flashing the firmware to ESP32
+./go flash
+```
+
+
 ## Material List
 | Component| Link |
 |---|---|
