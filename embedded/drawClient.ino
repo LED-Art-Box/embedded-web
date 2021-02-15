@@ -145,7 +145,7 @@ void callback(char* topic, byte* message, unsigned int length) {
   } else if (strcmp(topic, CONNECT_TOPIC) == 0) {
     sync();
   } else if (strcmp(topic, UPDATE_TOPIC) == 0) {
-    update(message);
+    update();
   } else {
     Serial.print("Wrong topic?! ");
     Serial.println(topic);
@@ -191,12 +191,10 @@ String getResourceUrl(String releaseUrl) {
   return resourceUrl;
 }
 
-void update(byte *message)
+void update()
 {
-  String tagName = String((char *)message);
-  Serial.printf("update to: %s\n", tagName);
-
-  String resourceUrl = getResourceUrl("https://github.com/LED-Art-Box/embedded-web/releases/download/"+tagName+"/firmware.bin");
+  Serial.println("Updating to latest firmware");
+  String resourceUrl = getResourceUrl("https://github.com/LED-Art-Box/embedded-web/releases/latest/download/firmware.bin");
 
   WiFiClientSecure wiFiClientSecure;
   wiFiClientSecure.setCACert(rootCACertificate);
