@@ -7,53 +7,21 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-
+#include <constants.h>
 
 #define PIN 4
 #ifndef VERSION
 #define VERSION "v0.0.0"
 #endif
 
-const char *MQTT_SERVER = "broker.emqx.io";
-const uint16_t MQTT_PORT = 1883;
-
-const char *rootCACertificate =
-    "-----BEGIN CERTIFICATE-----\n"
-    "MIIDxTCCAq2gAwIBAgIQAqxcJmoLQJuPC3nyrkYldzANBgkqhkiG9w0BAQUFADBs\n"
-    "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\n"
-    "d3cuZGlnaWNlcnQuY29tMSswKQYDVQQDEyJEaWdpQ2VydCBIaWdoIEFzc3VyYW5j\n"
-    "ZSBFViBSb290IENBMB4XDTA2MTExMDAwMDAwMFoXDTMxMTExMDAwMDAwMFowbDEL\n"
-    "MAkGA1UEBhMCVVMxFTATBgNVBAoTDERpZ2lDZXJ0IEluYzEZMBcGA1UECxMQd3d3\n"
-    "LmRpZ2ljZXJ0LmNvbTErMCkGA1UEAxMiRGlnaUNlcnQgSGlnaCBBc3N1cmFuY2Ug\n"
-    "RVYgUm9vdCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMbM5XPm\n"
-    "+9S75S0tMqbf5YE/yc0lSbZxKsPVlDRnogocsF9ppkCxxLeyj9CYpKlBWTrT3JTW\n"
-    "PNt0OKRKzE0lgvdKpVMSOO7zSW1xkX5jtqumX8OkhPhPYlG++MXs2ziS4wblCJEM\n"
-    "xChBVfvLWokVfnHoNb9Ncgk9vjo4UFt3MRuNs8ckRZqnrG0AFFoEt7oT61EKmEFB\n"
-    "Ik5lYYeBQVCmeVyJ3hlKV9Uu5l0cUyx+mM0aBhakaHPQNAQTXKFx01p8VdteZOE3\n"
-    "hzBWBOURtCmAEvF5OYiiAhF8J2a3iLd48soKqDirCmTCv2ZdlYTBoSUeh10aUAsg\n"
-    "EsxBu24LUTi4S8sCAwEAAaNjMGEwDgYDVR0PAQH/BAQDAgGGMA8GA1UdEwEB/wQF\n"
-    "MAMBAf8wHQYDVR0OBBYEFLE+w2kD+L9HAdSYJhoIAu9jZCvDMB8GA1UdIwQYMBaA\n"
-    "FLE+w2kD+L9HAdSYJhoIAu9jZCvDMA0GCSqGSIb3DQEBBQUAA4IBAQAcGgaX3Nec\n"
-    "nzyIZgYIVyHbIUf4KmeqvxgydkAQV8GK83rZEWWONfqe/EW1ntlMMUu4kehDLI6z\n"
-    "eM7b41N5cdblIZQB2lWHmiRk9opmzN6cN82oNLFpmyPInngiK3BD41VHMWEZ71jF\n"
-    "hS9OMPagMRYjyOfiZRYzy78aG6A9+MpeizGLYAiJLQwGXFK3xPkKmNEVX58Svnw2\n"
-    "Yzi9RKR/5CYrCsSXaQ3pjOLAEFe4yHYSkVXySGnYvCoCWw9E1CAx2/S6cCZdkGCe\n"
-    "vEsXCS+0yx5DaMkHJ8HSXPfqIbloEpw8nL+e/IBcm2PN7EeqJSdnoDfzAIJ9VNep\n"
-    "+OkuE6N36B9K\n"
-    "-----END CERTIFICATE-----\n";
-
-Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(16, 16, PIN,
-                                               NEO_MATRIX_TOP + NEO_MATRIX_LEFT +
-                                                   NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,
-                                               NEO_GRB + NEO_KHZ800);
+Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(
+    16, 16, PIN,
+    NEO_MATRIX_TOP + NEO_MATRIX_LEFT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,
+    NEO_GRB + NEO_KHZ800);
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 String clientId;
-
-const char DRAW_TOPIC[] = "lieblingswelt/draw";
-const char CONNECT_TOPIC[] = "lieblingswelt/draw/connect";
-const char UPDATE_TOPIC[] = "lieblingswelt/draw/update";
 
 uint8_t data[16][16][3] = {0};
 
@@ -85,19 +53,21 @@ void startWifi()
 void updateIfNeeded()
 {
   Serial.printf("Version: %s\n", VERSION);
-  String url = "https://api.github.com/repos/LED-Art-Box/embedded-web/releases/latest";
+  String url = LATEST_RELEASE_INFO_URL;
 
   HTTPClient http;
   http.begin(url);
 
   int httpResponseCode = http.GET();
-  if (httpResponseCode == 200) {
+  if (httpResponseCode == 200)
+  {
     StaticJsonDocument<2000> doc;
     deserializeJson(doc, http.getStream());
 
     String latest = doc["tag_name"].as<String>();
-    
-    if (latest != VERSION) {
+
+    if (latest != VERSION)
+    {
       Serial.printf("Needs Update from %s to %s\n", VERSION, latest);
       update();
     }
@@ -236,7 +206,7 @@ String followRedirect(String url, int count, int times)
 void update()
 {
   Serial.println("starting update");
-  String resourceUrl = followRedirect("https://github.com/LED-Art-Box/embedded-web/releases/latest/download/firmware.bin", 0, 4);
+  String resourceUrl = followRedirect(LATEST_FIRMWARE_URL, 0, 4);
 
   WiFiClientSecure wiFiClientSecure;
   wiFiClientSecure.setCACert(rootCACertificate);
