@@ -241,7 +241,8 @@ void setup()
   String clientId = "ESP32Client-";
   clientId += String(random(0xffff), HEX);
 
-  mqttClient.setServer(MQTT_BROKER_HOST, MQTT_BROKER_PORT);
+  uint16_t port = atoi(MQTT_BROKER_PORT);
+  mqttClient.setServer(MQTT_BROKER_HOST, port);
   mqttClient.setCallback(callback);
 }
 

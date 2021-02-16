@@ -7,7 +7,7 @@
 #endif
 
 #ifndef MQTT_BROKER_PORT
-#define MQTT_BROKER_PORT 1883
+#define MQTT_BROKER_PORT "1883"
 #endif
 
 #ifndef MQTT_CONNECT_TOPIC
