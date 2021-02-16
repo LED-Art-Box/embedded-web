@@ -194,7 +194,7 @@ void reconnect()
   }
 }
 
-String followRequest(String url, int count, int times)
+String followRedirect(String url, int count, int times)
 {
   if (count >= times)
   { //stop following redirects after n times
@@ -219,7 +219,7 @@ String followRequest(String url, int count, int times)
   {
     String nextUrl = http.header(headerKeys[0]);
     http.end();
-    return followRequest(nextUrl, count++, times);
+    return followRedirect(nextUrl, count++, times);
   }
   else
   {
@@ -231,7 +231,7 @@ void update()
 {
   Serial.printf("Updating from %s to latest firmware\n", VERSION);
 
-  String resourceUrl = followRequest("https://github.com/LED-Art-Box/embedded-web/releases/latest/download/firmware.bin", 0, 4);
+  String resourceUrl = followRedirect("https://github.com/LED-Art-Box/embedded-web/releases/latest/download/firmware.bin", 0, 4);
 
   WiFiClientSecure wiFiClientSecure;
   wiFiClientSecure.setCACert(rootCACertificate);
