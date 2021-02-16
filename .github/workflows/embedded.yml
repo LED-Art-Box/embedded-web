@@ -40,7 +40,7 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Make .env available in pipeline
       id: dotenv
-      uses: ./.github/actions/dotenv-action
+      uses: falti/dotenv-action@master
     - name: Run PlatformIO
       run: pio run
       env:
