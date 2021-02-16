@@ -7,6 +7,7 @@ on:
     - 'embedded/**'
     - 'platformio.ini'
     - '.github/workflows/embedded.yml'
+    - '.env'
 
 jobs:
   build:
