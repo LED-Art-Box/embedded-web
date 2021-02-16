@@ -13,9 +13,6 @@
 const char* MQTT_SERVER = "broker.emqx.io";
 const uint16_t MQTT_PORT = 1883;
 
-/**
- * This is lets-encrypt-x3-cross-signed.pem
- */
 const char* rootCACertificate = \
 "-----BEGIN CERTIFICATE-----\n" \
 "MIIDxTCCAq2gAwIBAgIQAqxcJmoLQJuPC3nyrkYldzANBgkqhkiG9w0BAQUFADBs\n" \
