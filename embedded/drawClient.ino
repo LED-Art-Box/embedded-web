@@ -194,8 +194,10 @@ void reconnect()
   }
 }
 
-String followRequest(String url, int count, int times) {
-  if (count >= times) { //stop following redirects after n times
+String followRequest(String url, int count, int times)
+{
+  if (count >= times)
+  { //stop following redirects after n times
     return url;
   }
 
@@ -208,18 +210,22 @@ String followRequest(String url, int count, int times) {
   http.collectHeaders(headerKeys, numberOfHeaders);
 
   int httpResponseCode = http.GET();
-  if (httpResponseCode == 200) {
-      http.end();
-      return url;
-  } else if (httpResponseCode == 302) {
+  if (httpResponseCode == 200)
+  {
+    http.end();
+    return url;
+  }
+  else if (httpResponseCode == 302)
+  {
     String nextUrl = http.header(headerKeys[0]);
     http.end();
     return followRequest(nextUrl, count++, times);
-  } else {
+  }
+  else
+  {
     return url;
   }
 }
-
 
 void update()
 {
