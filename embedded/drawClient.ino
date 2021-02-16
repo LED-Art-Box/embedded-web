@@ -6,10 +6,12 @@
 #include <HTTPUpdate.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <ArduinoJson.h>
+
 
 #define PIN 4
 #ifndef VERSION
-  #define VERSION "v0.0.0"
+#define VERSION "v0.0.0"
 #endif
 
 const char *MQTT_SERVER = "broker.emqx.io";
@@ -80,24 +82,28 @@ void startWifi()
   Serial.println(WiFi.localIP());
 }
 
-void setup()
+void updateIfNeeded()
 {
-  Serial.begin(115200);
   Serial.printf("Version: %s\n", VERSION);
+  String url = "https://api.github.com/repos/LED-Art-Box/embedded-web/releases/latest";
 
-  matrix.begin();
-  matrix.setBrightness(30);
-  matrix.setRotation(1);
-  matrix.fill(0);
-  matrix.show();
+  HTTPClient http;
+  http.begin(url);
 
-  startWifi();
+  int httpResponseCode = http.GET();
+  if (httpResponseCode == 200) {
+    StaticJsonDocument<2000> doc;
+    deserializeJson(doc, http.getStream());
 
-  String clientId = "ESP32Client-";
-  clientId += String(random(0xffff), HEX);
+    String latest = doc["tag_name"].as<String>();
+    
+    if (latest != VERSION) {
+      Serial.printf("Needs Update from %s to %s\n", VERSION, latest);
+      update();
+    }
+  }
 
-  mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
-  mqttClient.setCallback(callback);
+  http.end();
 }
 
 void sync()
@@ -229,8 +235,7 @@ String followRedirect(String url, int count, int times)
 
 void update()
 {
-  Serial.printf("Updating from %s to latest firmware\n", VERSION);
-
+  Serial.println("starting update");
   String resourceUrl = followRedirect("https://github.com/LED-Art-Box/embedded-web/releases/latest/download/firmware.bin", 0, 4);
 
   WiFiClientSecure wiFiClientSecure;
@@ -251,6 +256,26 @@ void update()
     Serial.println("HTTP_UPDATE_OK");
     break;
   }
+}
+
+void setup()
+{
+  Serial.begin(115200);
+
+  matrix.begin();
+  matrix.setBrightness(30);
+  matrix.setRotation(1);
+  matrix.fill(0);
+  matrix.show();
+
+  startWifi();
+  updateIfNeeded();
+
+  String clientId = "ESP32Client-";
+  clientId += String(random(0xffff), HEX);
+
+  mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
+  mqttClient.setCallback(callback);
 }
 
 void loop()
