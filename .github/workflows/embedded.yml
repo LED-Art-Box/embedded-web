@@ -38,10 +38,19 @@ jobs:
       uses: mathieudutour/github-tag-action@v5.1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Make .env available in pipeline
+      id: dotenv
+      uses: ./.github/actions/dotenv-action
     - name: Run PlatformIO
       run: pio run
       env:
-        PLATFORMIO_BUILD_FLAGS: -D VERSION=\"${{ steps.tag_version.outputs.new_tag }}\"
+        PLATFORMIO_BUILD_FLAGS: 
+          -D VERSION=\"${{ steps.tag_version.outputs.new_tag }}\"
+          -D MQTT_BROKER_HOST=\"${{ steps.dotenv.outputs.mqtt_broker_host }}\"
+          -D MQTT_BROKER_PORT=\"${{ steps.dotenv.outputs.mqtt_broker_port }}\"
+          -D MQTT_CONNECT_TOPIC=\"${{ steps.dotenv.outputs.mqtt_connect_topic }}\"
+          -D MQTT_UPDATE_TOPIC=\"${{ steps.dotenv.outputs.mqtt_update_topic }}\"
+          -D MQTT_DRAW_TOPIC=\"${{ steps.dotenv.outputs.mqtt_draw_topic }}\"
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -66,8 +75,8 @@ jobs:
       uses: juhrlass/mqtt-action@master
       with:
         protocol: mqtt
-        host: broker.emqx.io
-        port: 1883
-        topic: "lieblingswelt/draw/update"
+        host: ${{ steps.dotenv.outputs.mqtt_broker_host }}
+        port: ${{ steps.dotenv.outputs.mqtt_broker_port }}
+        topic: ${{ steps.dotenv.outputs.mqtt_update_topic }}
         message: ${{ steps.tag_version.outputs.new_tag }}
         username: 'mqtt'

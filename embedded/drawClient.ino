@@ -10,9 +10,6 @@
 #include <constants.h>
 
 #define PIN 4
-#ifndef VERSION
-#define VERSION "v0.0.0"
-#endif
 
 Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(
     16, 16, PIN,
@@ -94,7 +91,7 @@ void sync()
       payload[2] = data[x][y][0];
       payload[3] = data[x][y][1];
       payload[4] = data[x][y][2];
-      mqttClient.publish(DRAW_TOPIC, payload, sizeof(payload));
+      mqttClient.publish(MQTT_DRAW_TOPIC, payload, sizeof(payload));
       Serial.print(",");
     }
   }
@@ -106,7 +103,7 @@ void callback(char *topic, byte *message, unsigned int length)
   Serial.print("Message arrived on topic: ");
   Serial.println(topic);
 
-  if (strcmp(topic, DRAW_TOPIC) == 0)
+  if (strcmp(topic, MQTT_DRAW_TOPIC) == 0)
   {
     if (length != 5)
     {
@@ -132,11 +129,11 @@ void callback(char *topic, byte *message, unsigned int length)
     matrix.drawPixel(x, y, color);
     matrix.show();
   }
-  else if (strcmp(topic, CONNECT_TOPIC) == 0)
+  else if (strcmp(topic, MQTT_CONNECT_TOPIC) == 0)
   {
     sync();
   }
-  else if (strcmp(topic, UPDATE_TOPIC) == 0)
+  else if (strcmp(topic, MQTT_UPDATE_TOPIC) == 0)
   {
     update();
   }
@@ -155,9 +152,9 @@ void reconnect()
     if (mqttClient.connect(clientId.c_str()))
     {
       Serial.println("connected");
-      mqttClient.subscribe(DRAW_TOPIC);
-      mqttClient.subscribe(CONNECT_TOPIC);
-      mqttClient.subscribe(UPDATE_TOPIC);
+      mqttClient.subscribe(MQTT_DRAW_TOPIC);
+      mqttClient.subscribe(MQTT_CONNECT_TOPIC);
+      mqttClient.subscribe(MQTT_UPDATE_TOPIC);
       sync();
     }
     else
@@ -244,7 +241,7 @@ void setup()
   String clientId = "ESP32Client-";
   clientId += String(random(0xffff), HEX);
 
-  mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
+  mqttClient.setServer(MQTT_BROKER_HOST, MQTT_BROKER_PORT);
   mqttClient.setCallback(callback);
 }
 
