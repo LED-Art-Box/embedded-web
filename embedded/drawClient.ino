@@ -8,7 +8,9 @@
 #include <HTTPClient.h>
 
 #define PIN 4
-#ifndef VERSION "v.0.0.0" // set by pipeline
+#ifndef VERSION
+  #define VERSION "v0.0.0"
+#endif
 
 const char *MQTT_SERVER = "broker.emqx.io";
 const uint16_t MQTT_PORT = 1883;
@@ -81,6 +83,7 @@ void startWifi()
 void setup()
 {
   Serial.begin(115200);
+  Serial.printf("Version: %s\n", VERSION);
 
   matrix.begin();
   matrix.setBrightness(30);
@@ -220,7 +223,7 @@ String followRequest(String url, int count, int times) {
 
 void update()
 {
-  Serial.printf("updating to latest firmware");
+  Serial.printf("Updating from %s to latest firmware\n", VERSION);
 
   String resourceUrl = followRequest("https://github.com/LED-Art-Box/embedded-web/releases/latest/download/firmware.bin", 0, 4);
 
