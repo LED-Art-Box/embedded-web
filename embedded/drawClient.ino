@@ -9,6 +9,7 @@
 
 
 #define PIN 4
+#define VERSION "v0.0.0" // overwritten by pipeline
 
 const char* MQTT_SERVER = "broker.emqx.io";
 const uint16_t MQTT_PORT = 1883;
@@ -190,6 +191,7 @@ String getResourceUrl(String releaseUrl) {
 
 void update(byte *message)
 {
+  Serial.printf("current version: %s\n", VERSION);
   String tagName = String((char *)message);
   Serial.printf("update to: %s\n", tagName);
 
