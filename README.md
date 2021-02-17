@@ -9,17 +9,23 @@
 
 The common tasks are executable via the `go` script.
 
-To see what it can do, call:
+Some example commands:
 
 ```sh
-./go
-
-
 # compiling the firmware
 ./go build
 
 # flashing the firmware to ESP32
 ./go flash
+
+# capture current image
+./go capture image.png
+```
+
+To see what it can do, call:
+
+```sh
+./go
 ```
 
 
