@@ -61,7 +61,7 @@ jobs:
 
     - uses: actions/checkout@master
     - name: Build and upload Lieblingswelt Firmware
-      uses: LED-Art-Box/embedded-web/.github/actions/build-and-upoad-embedded@master
+      uses: LED-Art-Box/embedded-web/.github/actions/build-and-upoad-embedded
       with:
         env-file-path: .env.lieblingswelt
         tag-name: ${{ steps.tag_version.outputs.new_tag }}
