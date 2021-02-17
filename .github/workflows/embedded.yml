@@ -61,7 +61,7 @@ jobs:
 
     - uses: actions/checkout@v1
     - name: Build and upload Lieblingswelt Firmware
-      uses: ./.github/actions/build-and-upoad-embedded@master
+      uses: ./.github/actions/build-and-upoad-embedded
       with:
         env-file-path: .env.lieblingswelt
         tag-name: ${{ steps.tag_version.outputs.new_tag }}
