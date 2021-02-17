@@ -1,3 +1,5 @@
+name: "Build and upload firmeare bin"
+description: "Builds firmware bin on given env file and uploads it to the release based on the given upload url"
 inputs:
   tag-name: 
     description: 'Tag name used for release'

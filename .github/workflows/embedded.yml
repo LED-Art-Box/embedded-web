@@ -6,6 +6,7 @@ on:
     paths:
     - 'embedded/**'
     - 'platformio.ini'
+    - '.github/actions/build-and-upload-embedded.yml'
     - '.github/workflows/embedded.yml'
     - '.env'
 
@@ -61,7 +62,7 @@ jobs:
 
     - uses: actions/checkout@v2
     - name: Build and upload Lieblingswelt Firmware
-      uses: ./github/actions/build-and-upoad-embedded@master
+      uses: ./.github/actions/build-and-upload-embedded
       with:
         env-file-path: .env.lieblingswelt
         tag-name: ${{ steps.tag_version.outputs.new_tag }}
