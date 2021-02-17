@@ -61,7 +61,7 @@ jobs:
 
     - name: Build and upload Lieblingswelt Firmware
       uses: ./.github/actions/build-and-upoad-embedded@master
-        with: 
-          env-file-path: .env.lieblingswelt
-          tag-name: ${{ steps.tag_version.outputs.new_tag }}
-          upload-url: ${{ steps.create_release.outputs.upload_url }}
+      with:
+        env-file-path: .env.lieblingswelt
+        tag-name: ${{ steps.tag_version.outputs.new_tag }}
+        upload-url: ${{ steps.create_release.outputs.upload_url }}
