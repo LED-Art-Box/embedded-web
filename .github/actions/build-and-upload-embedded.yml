@@ -1,0 +1,49 @@
+inputs:
+  tag-name: 
+    description: 'Tag name used for release'
+    default: 'No tag name provided'
+    required: true
+  env-file-path: 
+    description: 'Path to env file'
+    default: 'No env file path provided'
+    required: true
+  upload-url: 
+    description: 'release asset update url'
+    default: 'No upload url provided'
+    required: true
+runs:
+  using: "composite"
+  steps: 
+    - name: Make .env file available in pipeline
+      id: dotenv
+      uses: falti/dotenv-action@master
+      path: ${{ inputs.env-file-path }}
+    - name: Run PlatformIO
+      run: pio run --environment esp32dev
+      env:
+        PLATFORMIO_BUILD_FLAGS: 
+          -D VERSION=\"${{ inputs.tag-name }}\"
+          -D MQTT_BROKER_HOST=\"${{ steps.dotenv.outputs.mqtt_broker_host }}\"
+          -D MQTT_BROKER_PORT=\"${{ steps.dotenv.outputs.mqtt_broker_port }}\"
+          -D MQTT_CONNECT_TOPIC=\"${{ steps.dotenv.outputs.mqtt_connect_topic }}\"
+          -D MQTT_UPDATE_TOPIC=\"${{ steps.dotenv.outputs.mqtt_update_topic }}\"
+          -D MQTT_DRAW_TOPIC=\"${{ steps.dotenv.outputs.mqtt_draw_topic }}\"
+    - name: Upload Firmware Bin
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ inputs.upload-url }}
+        asset_path: ./.pio/build/esp32dev/firmware.bin
+        asset_name: ${{ steps.dotenv.outputs.firmware_file_name }}
+        asset_content_type: application/octet-stream
+    - name: Publish update message to mqtt broker
+      uses: juhrlass/mqtt-action@master
+      with:
+        protocol: mqtt
+        host: ${{ steps.dotenv.outputs.mqtt_broker_host }}
+        port: ${{ steps.dotenv.outputs.mqtt_broker_port }}
+        topic: ${{ steps.dotenv.outputs.mqtt_update_topic }}
+        message: ${{ steps.tag_version.outputs.new_tag }}
+        username: 'pipeline'

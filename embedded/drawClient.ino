@@ -202,7 +202,7 @@ String followRedirect(String url, int count, int times)
 
 void update()
 {
-  Serial.println("starting update");
+  Serial.println("Starting update");
   String resourceUrl = followRedirect(LATEST_FIRMWARE_URL, 0, 4);
 
   WiFiClientSecure wiFiClientSecure;

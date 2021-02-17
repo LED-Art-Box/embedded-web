@@ -11,11 +11,10 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
+
     - name: Cache pip
       uses: actions/cache@v2
       with:
@@ -23,35 +22,32 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
+
     - name: Cache PlatformIO
       uses: actions/cache@v2
       with:
         path: ~/.platformio
         key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+
     - name: Set up Python
       uses: actions/setup-python@v2
+
     - name: Install PlatformIO
       run: |
         python -m pip install --upgrade pip
         pip install --upgrade platformio
+
+      #FIXME that's the place were we should build and run some tests before releasing 
+      #this is here, so it doesn't create a release on failed build 
+    - name: Run PlatformIO 
+      run: pio run --environment esp32dev 
+
     - name: Bump version and push tag
       id: tag_version
       uses: mathieudutour/github-tag-action@v5.1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Make .env available in pipeline
-      id: dotenv
-      uses: falti/dotenv-action@master
-    - name: Run PlatformIO
-      run: pio run
-      env:
-        PLATFORMIO_BUILD_FLAGS: 
-          -D VERSION=\"${{ steps.tag_version.outputs.new_tag }}\"
-          -D MQTT_BROKER_HOST=\"${{ steps.dotenv.outputs.mqtt_broker_host }}\"
-          -D MQTT_BROKER_PORT=\"${{ steps.dotenv.outputs.mqtt_broker_port }}\"
-          -D MQTT_CONNECT_TOPIC=\"${{ steps.dotenv.outputs.mqtt_connect_topic }}\"
-          -D MQTT_UPDATE_TOPIC=\"${{ steps.dotenv.outputs.mqtt_update_topic }}\"
-          -D MQTT_DRAW_TOPIC=\"${{ steps.dotenv.outputs.mqtt_draw_topic }}\"
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -62,22 +58,10 @@ jobs:
         release_name: Release ${{ steps.tag_version.outputs.new_tag }}
         draft: false
         prerelease: false
-    - name: Upload Release Asset
-      id: upload-release-asset 
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./.pio/build/esp32dev/firmware.bin
-        asset_name: firmware.bin
-        asset_content_type: application/octet-stream
-    - name: Publish commit hash to mqtt broker
-      uses: juhrlass/mqtt-action@master
-      with:
-        protocol: mqtt
-        host: ${{ steps.dotenv.outputs.mqtt_broker_host }}
-        port: ${{ steps.dotenv.outputs.mqtt_broker_port }}
-        topic: ${{ steps.dotenv.outputs.mqtt_update_topic }}
-        message: ${{ steps.tag_version.outputs.new_tag }}
-        username: 'mqtt'
+
+    - name: Build and upload Lieblingswelt Firmware
+      uses: ./.github/actions/build-and-upoad-embedded@master
+        with: 
+          env-file-path: .env.lieblingswelt
+          tag-name: ${{ steps.tag_version.outputs.new_tag }}
+          upload-url: ${{ steps.create_release.outputs.upload_url }}

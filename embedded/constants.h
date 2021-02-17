@@ -22,8 +22,12 @@
 #define MQTT_DRAW_TOPIC "lieblingswelt/draw"
 #endif
 
+#ifndef FIRMWARE_FILE_NAME
+#define FIRMWARE_FILE_NAME "firmware.bin"
+#endif
+
 // github urls for releases
-const char LATEST_FIRMWARE_URL[] = "https://github.com/LED-Art-Box/embedded-web/releases/latest/download/firmware.bin";
+String LATEST_FIRMWARE_URL = "https://github.com/LED-Art-Box/embedded-web/releases/latest/download/" + String(FIRMWARE_FILE_NAME);
 const char LATEST_RELEASE_INFO_URL[] = "https://api.github.com/repos/LED-Art-Box/embedded-web/releases/latest";
 
 // github cert
