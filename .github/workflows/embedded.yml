@@ -46,7 +46,8 @@ jobs:
     - name: Make .env file available in pipeline
       id: dotenv
       uses: falti/dotenv-action@master
-      path: .env.lieblingswelt
+      with:
+        path: .env.lieblingswelt
 
     - name: Run PlatformIO using variables from env file
       run: pio run --environment esp32dev
