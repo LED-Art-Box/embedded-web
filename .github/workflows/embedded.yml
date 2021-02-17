@@ -59,6 +59,7 @@ jobs:
         draft: false
         prerelease: false
 
+    - uses: actions/checkout@v1
     - name: Build and upload Lieblingswelt Firmware
       uses: ./.github/actions/build-and-upoad-embedded@master
       with:
