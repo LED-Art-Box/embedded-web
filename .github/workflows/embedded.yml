@@ -6,9 +6,8 @@ on:
     paths:
     - 'embedded/**'
     - 'platformio.ini'
-    - '.github/actions/build-and-upload-embedded.yml'
     - '.github/workflows/embedded.yml'
-    - '.env'
+    - '.env.lieblingswelt'
 
 jobs:
   build:
@@ -33,23 +32,34 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
 
-    - name: Install PlatformIO
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade platformio
-
-      #FIXME that's the place were we should build and run some tests before releasing 
-      #this is here, so it doesn't create a release on failed build 
-    - name: Run PlatformIO 
-      run: pio run --environment esp32dev 
-
     - name: Bump version and push tag
       id: tag_version
       uses: mathieudutour/github-tag-action@v5.1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Create Release
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+
+    - name: Make .env file available in pipeline
+      id: dotenv
+      uses: falti/dotenv-action@master
+      path: .env.lieblingswelt
+
+    - name: Run PlatformIO using variables from env file
+      run: pio run --environment esp32dev
+      env:
+        PLATFORMIO_BUILD_FLAGS: 
+          -D VERSION=\"${{ steps.tag_version.outputs.new_tag }}\"
+          -D MQTT_BROKER_HOST=\"${{ steps.dotenv.outputs.mqtt_broker_host }}\"
+          -D MQTT_BROKER_PORT=\"${{ steps.dotenv.outputs.mqtt_broker_port }}\"
+          -D MQTT_CONNECT_TOPIC=\"${{ steps.dotenv.outputs.mqtt_connect_topic }}\"
+          -D MQTT_UPDATE_TOPIC=\"${{ steps.dotenv.outputs.mqtt_update_topic }}\"
+          -D MQTT_DRAW_TOPIC=\"${{ steps.dotenv.outputs.mqtt_draw_topic }}\"
+
+    - name: Create release
       id: create_release
       uses: actions/create-release@v1
       env:
@@ -60,10 +70,23 @@ jobs:
         draft: false
         prerelease: false
 
-    - uses: actions/checkout@v2
-    - name: Build and upload Lieblingswelt Firmware
-      uses: ./.github/actions/build-and-upload-embedded
+    - name: Upload firmware bin to release
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        env-file-path: .env.lieblingswelt
-        tag-name: ${{ steps.tag_version.outputs.new_tag }}
-        upload-url: ${{ steps.create_release.outputs.upload_url }}
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./.pio/build/esp32dev/firmware.bin
+        asset_name: ${{ steps.dotenv.outputs.firmware_file_name }}
+        asset_content_type: application/octet-stream
+        
+    - name: Publish update message to mqtt broker
+      uses: juhrlass/mqtt-action@master
+      with:
+        protocol: mqtt
+        host: ${{ steps.dotenv.outputs.mqtt_broker_host }}
+        port: ${{ steps.dotenv.outputs.mqtt_broker_port }}
+        topic: ${{ steps.dotenv.outputs.mqtt_update_topic }}
+        message: ${{ steps.tag_version.outputs.new_tag }}
+        username: 'pipeline'
