@@ -7,7 +7,7 @@ on:
     paths:
       - 'scripts/**'
       - 'animations/**'
-      - '.github/workflows/web.yml'
+      - '.github/workflows/scripts.yml'
 
 jobs:
   deploy:
