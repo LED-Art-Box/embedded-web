@@ -18,6 +18,10 @@ task_flash() {
   pipenv run pio run -t upload
 }
 
+task_lint() {
+  pipenv run flake8 ./animations/ ./scripts/ --count --show-source --ignore=E501
+}
+
 task_help() {
   cat <<EOF
 Usage $0 COMMAND
@@ -28,6 +32,7 @@ Commands are:
   capture image-file    Store current image to file
   flash                 Flash firmware onto ESP32
   init                  Create virtualenv
+  lint                  Lint Python scripts
 
 EOF
 }
@@ -40,6 +45,7 @@ case "${CMD}" in
   capture) task_capture "$@" ;;
   flash) task_flash "$@" ;;
   init) task_init "$@" ;;
+  lint) task_lint "$@" ;;
   *) task_help ;;
 esac
 

@@ -9,6 +9,7 @@ pillow = "*"
 
 [dev-packages]
 platformio = "*"
+flake8 = "*"
 
 [requires]
 python_version = "3.9"
