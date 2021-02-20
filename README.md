@@ -20,6 +20,9 @@ Some example commands:
 
 # capture current image
 ./go capture image.png
+
+# animate yellow screamy face
+./go yellow-screamy
 ```
 
 To see what it can do, call:

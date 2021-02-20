@@ -22,6 +22,10 @@ task_lint() {
   pipenv run flake8 ./animations/ ./scripts/ --count --show-source --ignore=E501
 }
 
+task_yellow_screamy() {
+  pipenv run python animations/yellow-screamy.py "$@"
+}
+
 task_help() {
   cat <<EOF
 Usage $0 COMMAND
@@ -33,6 +37,7 @@ Commands are:
   flash                 Flash firmware onto ESP32
   init                  Create virtualenv
   lint                  Lint Python scripts
+  yellow-screamy        Run yellow screamy animation
 
 EOF
 }
@@ -46,6 +51,7 @@ case "${CMD}" in
   flash) task_flash "$@" ;;
   init) task_init "$@" ;;
   lint) task_lint "$@" ;;
+  yellow-screamy) task_yellow_screamy "$@" ;;
   *) task_help ;;
 esac
 
