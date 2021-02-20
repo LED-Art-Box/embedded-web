@@ -21,6 +21,9 @@ Some example commands:
 # capture current image
 ./go capture image.png
 
+# upload image
+./go upload image.png
+
 # animate yellow screamy face
 ./go yellow-screamy
 ```

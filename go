@@ -14,6 +14,10 @@ task_capture() {
   pipenv run python scripts/capture.py "$@"
 }
 
+task_upload() {
+  pipenv run python scripts/upload-image.py "$@"
+}
+
 task_flash() {
   pipenv run pio run -t upload
 }
@@ -34,6 +38,7 @@ Commands are:
 
   build                 Build the embedded firmware
   capture image-file    Store current image to file
+  upload image-file     Upload image file
   flash                 Flash firmware onto ESP32
   init                  Create virtualenv
   lint                  Lint Python scripts
@@ -48,6 +53,7 @@ shift || true
 case "${CMD}" in
   build) task_build "$@" ;;
   capture) task_capture "$@" ;;
+  upload) task_upload "$@" ;;
   flash) task_flash "$@" ;;
   init) task_init "$@" ;;
   lint) task_lint "$@" ;;
