@@ -69,7 +69,7 @@ void updateIfNeeded()
 
     if (latest != VERSION)
     {
-      Serial.printf("Needs Update from %s to %s\n", VERSION, latest);
+      Serial.printf("Needs Update from %s to %s\n", VERSION, latest.c_str());
       update();
     }
   }
