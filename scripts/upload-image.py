@@ -36,9 +36,7 @@ class ImageUploader(object):
             for x in range(16):
                 rgb = image.getpixel((x, y))
                 color565 = self._rgb_to_rgb565(rgb)
-
-                data.append(color565 & 0xFF)
-                data.append((color565 >> 16) & 0xFF)
+                data.extend(color565.to_bytes(2, byteorder='little'))
 
         draw_topic = self._topic_prefix + DRAW_TOPIC_SUFFIX
         self._client.publish(draw_topic, payload=bytearray(data))
