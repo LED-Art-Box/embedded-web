@@ -21,8 +21,11 @@ Some example commands:
 # capture current image
 ./go capture image.png
 
-# upload image
+# upload image pixel by pixel
 ./go upload image.png
+
+# upload image in one go
+./go upload --full-image image.png
 
 # animate yellow screamy face
 ./go yellow-screamy

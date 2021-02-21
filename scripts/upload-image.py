@@ -16,13 +16,41 @@ class ImageUploader(object):
         self._client = client
         self._topic_prefix = topic_prefix
 
-    def upload(self, image):
+    def upload(self, image, full_image=False):
+        if full_image:
+            self._upload_full_image(image)
+        else:
+            self._upload_pixel_by_pixel(image)
+
+    def _upload_pixel_by_pixel(self, image):
         draw_topic = self._topic_prefix + DRAW_TOPIC_SUFFIX
         for y in range(16):
             for x in range(16):
                 rgb = image.getpixel((x, y))
                 self._client.publish(draw_topic, bytearray([x, y, rgb[0], rgb[1], rgb[2]]))
                 time.sleep(0.2)
+
+    def _upload_full_image(self, image):
+        data = []
+        for y in range(16):
+            for x in range(16):
+                rgb = image.getpixel((x, y))
+                color565 = self._rgb_to_rgb565(rgb)
+
+                data.append(color565 & 0xFF)
+                data.append((color565 >> 16) & 0xFF)
+
+        draw_topic = self._topic_prefix + DRAW_TOPIC_SUFFIX
+        self._client.publish(draw_topic, payload=bytearray(data))
+        print('Uploading %d bytes to %s' % (len(data), draw_topic))
+
+    @staticmethod
+    def _rgb_to_rgb565(rgb):
+        r5 = (rgb[0] * 249 + 1014) >> 11
+        g6 = (rgb[1] * 253 + 505) >> 10
+        b5 = (rgb[2] * 249 + 1014) >> 11
+        color565 = ((r5 & 0x1F) << 11) | ((g6 & 0x3F) << 5) | (b5 & 0x1F)
+        return color565
 
 
 def _validate_image(filename, auto_convert=True):
@@ -44,7 +72,7 @@ def run(args):
     client.connect(args.mqtt_broker, args.mqtt_port)
     client.loop_start()
 
-    ImageUploader(client, args.topic).upload(img)
+    ImageUploader(client, args.topic).upload(img, full_image=args.full_image)
 
     client.loop_stop()
     client.disconnect()
@@ -61,6 +89,8 @@ parser.add_argument('--topic', default=DEFAULT_TOPIC_PREFIX,
                     help='The topic prefix (default %s)' % DEFAULT_TOPIC_PREFIX)
 parser.add_argument('--auto-convert', dest='auto_convert', action='store_true',
                     help='Auto convert image to 16x16 RGB')
+parser.add_argument('--full-image', dest='full_image', action='store_true',
+                    help='Upload entire image in one MQTT message')
 
 
 run(parser.parse_args())

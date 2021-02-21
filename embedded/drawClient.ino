@@ -10,9 +10,13 @@
 #include <constants.h>
 
 #define PIN 4
+#define MATRIX_WIDTH 16
+#define MATRIX_HEIGHT 16
+
+#define MAX_MESSAGE_SIZE 768
 
 Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(
-    16, 16, PIN,
+    MATRIX_WIDTH, MATRIX_HEIGHT, PIN,
     NEO_MATRIX_TOP + NEO_MATRIX_LEFT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,
     NEO_GRB + NEO_KHZ800);
 
@@ -20,7 +24,7 @@ WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 String clientId;
 
-uint8_t data[16][16][3] = {0};
+uint8_t data[MATRIX_WIDTH][MATRIX_HEIGHT][3] = {0};
 
 void startWifi()
 {
@@ -98,6 +102,52 @@ void sync()
   Serial.println();
 }
 
+void drawSinglePixel(byte *message)
+{
+  uint8_t x = message[0];
+  uint8_t y = message[1];
+  uint16_t color = matrix.Color(message[2], message[3], message[4]);
+
+  if (x >= matrix.width() || y >= matrix.height())
+  {
+    Serial.printf("Invalid coordinates %d,%d\n", x, y);
+    return;
+  }
+
+  data[x][y][0] = message[2];
+  data[x][y][1] = message[3];
+  data[x][y][2] = message[4];
+
+  matrix.drawPixel(x, y, color);
+  matrix.show();
+}
+
+void updateDataFrom565Value(uint8_t x, uint8_t y, uint16_t color) {
+  uint16_t r5 = (color & 0xf800) >> 11;
+  uint16_t g6 = (color & 0x07e0) >> 5;
+  uint16_t b5 = color & 0x001f;
+
+  uint8_t r8 = (r5 * 527 + 23) >> 6;
+  uint8_t g8 = (g6 * 259 + 33) >> 6;
+  uint8_t b8 = (b5 * 527 + 23) >> 6;
+
+  data[x][y][0] = r8;
+  data[x][y][1] = g8;
+  data[x][y][2] = b8;
+}
+
+void drawFullImage(const byte *message) {
+  const uint16_t *pixel = (const uint16_t*)message;
+  for (uint16_t y=0; y<matrix.height(); y++) {
+    for (uint16_t x=0; x<matrix.width(); x++) {
+      uint16_t color = pixel[(y*16) + x];
+      updateDataFrom565Value(x, y, color);
+      matrix.drawPixel(x, y, color);
+    }
+  }
+  matrix.show();
+}
+
 void callback(char *topic, byte *message, unsigned int length)
 {
   Serial.print("Message arrived on topic: ");
@@ -105,29 +155,15 @@ void callback(char *topic, byte *message, unsigned int length)
 
   if (strcmp(topic, MQTT_DRAW_TOPIC) == 0)
   {
-    if (length != 5)
-    {
+    if (length == 5) {
+      drawSinglePixel(message);
+    } else if (length == 512) {
+      drawFullImage(message);
+    } else {
       Serial.print("Wrong msg size: ");
       Serial.println(length);
       return;
     }
-
-    uint8_t x = message[0];
-    uint8_t y = message[1];
-    uint16_t color = matrix.Color(message[2], message[3], message[4]);
-
-    if (x >= matrix.width() || y >= matrix.height())
-    {
-      Serial.printf("Invalid coordinates %d,%d\n", x, y);
-      return;
-    }
-
-    data[x][y][0] = message[2];
-    data[x][y][1] = message[3];
-    data[x][y][2] = message[4];
-
-    matrix.drawPixel(x, y, color);
-    matrix.show();
   }
   else if (strcmp(topic, MQTT_CONNECT_TOPIC) == 0)
   {
@@ -244,6 +280,7 @@ void setup()
   uint16_t port = atoi(MQTT_BROKER_PORT);
   mqttClient.setServer(MQTT_BROKER_HOST, port);
   mqttClient.setCallback(callback);
+  mqttClient.setBufferSize(MAX_MESSAGE_SIZE);
 }
 
 void loop()
