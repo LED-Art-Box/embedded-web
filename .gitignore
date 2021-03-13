@@ -2,7 +2,7 @@
 .DS_Store
 we/.DS_Store
 node_modules
-/dist
+/web/dist
 
 
 # local env files

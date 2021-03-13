@@ -18,6 +18,10 @@ task_clock() {
   pipenv run python scripts/clock.py --full-image "$@"
 }
 
+task_npm() {
+  (cd web; npm "$@")
+}
+
 task_upload() {
   pipenv run python scripts/upload-image.py "$@"
 }
@@ -43,6 +47,7 @@ Commands are:
   build                 Build the embedded firmware
   capture image-file    Store current image to file
   clock                 Current time as analog clock
+  npm                   Run npm in ./web folder
   upload image-file     Upload image file
   flash                 Flash firmware onto ESP32
   init                  Create virtualenv
@@ -59,6 +64,7 @@ case "${CMD}" in
   build) task_build "$@" ;;
   capture) task_capture "$@" ;;
   clock) task_clock "$@" ;;
+  npm) task_npm "$@" ;;
   upload) task_upload "$@" ;;
   flash) task_flash "$@" ;;
   init) task_init "$@" ;;
