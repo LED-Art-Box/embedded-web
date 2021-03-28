@@ -34,6 +34,10 @@ task_lint() {
   pipenv run flake8 ./animations/ ./scripts/ --count --show-source --ignore=E501
 }
 
+task_serial_monitor() {
+  pipenv run pio device monitor
+}
+
 task_yellow_screamy() {
   pipenv run python animations/yellow-screamy.py "$@"
 }
@@ -52,6 +56,7 @@ Commands are:
   flash                 Flash firmware onto ESP32
   init                  Create virtualenv
   lint                  Lint Python scripts
+  serial-monitor        Serial monitor/show logs of ESP32
   yellow-screamy        Run yellow screamy animation
 
 EOF
@@ -69,6 +74,7 @@ case "${CMD}" in
   flash) task_flash "$@" ;;
   init) task_init "$@" ;;
   lint) task_lint "$@" ;;
+  serial-monitor) task_serial_monitor "$@" ;;
   yellow-screamy) task_yellow_screamy "$@" ;;
   *) task_help ;;
 esac
