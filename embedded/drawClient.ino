@@ -75,8 +75,9 @@ void sync()
 {
   Serial.print("Sync: ");
   uint8_t payload[5];
-  matrix.foreach([&](uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b) {
-    if (r != 0 || g != 0 || b != 0) {
+  matrix.foreach ([&](uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b) {
+    if (r != 0 || g != 0 || b != 0)
+    {
       payload[0] = x;
       payload[1] = y;
       payload[2] = r;
@@ -84,8 +85,10 @@ void sync()
       payload[4] = b;
 
       mqttClient.publish(MQTT_DRAW_TOPIC, payload, sizeof(payload));
-      Serial.print(",");              
-    } else {
+      Serial.print(",");
+    }
+    else
+    {
       Serial.print(".");
     }
   });
@@ -100,10 +103,10 @@ void drawSinglePixel(byte *message)
   matrix.draw(x, y, message[2], message[3], message[4]);
 }
 
+void drawFullImage(const byte *message, size_t length)
+{
 
-void drawFullImage(const byte *message, size_t length) {
-
-  const uint16_t *image = (const uint16_t*)message;
+  const uint16_t *image = (const uint16_t *)message;
   matrix.draw565Image(image, length / 2);
 }
 
@@ -114,11 +117,16 @@ void callback(char *topic, byte *message, unsigned int length)
 
   if (strcmp(topic, MQTT_DRAW_TOPIC) == 0)
   {
-    if (length == 5) {
+    if (length == 5)
+    {
       drawSinglePixel(message);
-    } else if (length == 512) {
+    }
+    else if (length == 512)
+    {
       drawFullImage(message, length);
-    } else {
+    }
+    else
+    {
       Serial.print("Wrong msg size: ");
       Serial.println(length);
       return;
