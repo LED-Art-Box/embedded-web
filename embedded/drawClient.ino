@@ -1,13 +1,12 @@
 #include <WiFiManager.h>
 #include <PubSubClient.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_NeoMatrix.h>
-#include <Adafruit_NeoPixel.h>
+
 #include <HTTPUpdate.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <constants.h>
+#include "matrix.h"
+#include "constants.h"
 
 #define PIN 4
 #define MATRIX_WIDTH 16
@@ -15,16 +14,11 @@
 
 #define MAX_MESSAGE_SIZE 768
 
-Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(
-    MATRIX_WIDTH, MATRIX_HEIGHT, PIN,
-    NEO_MATRIX_TOP + NEO_MATRIX_LEFT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,
-    NEO_GRB + NEO_KHZ800);
+Matrix matrix;
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 String clientId;
-
-uint8_t data[MATRIX_WIDTH][MATRIX_HEIGHT][3] = {0};
 
 void startWifi()
 {
@@ -81,24 +75,20 @@ void sync()
 {
   Serial.print("Sync: ");
   uint8_t payload[5];
-  for (uint8_t x = 0; x < matrix.width(); x++)
-  {
-    for (uint8_t y = 0; y < matrix.height(); y++)
-    {
-      if (data[x][y][0] == 0 && data[x][y][1] == 0 && data[x][y][2] == 0)
-      {
-        Serial.print(".");
-        continue;
-      }
+  matrix.foreach([&](uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b) {
+    if (r != 0 || g != 0 || b != 0) {
       payload[0] = x;
       payload[1] = y;
-      payload[2] = data[x][y][0];
-      payload[3] = data[x][y][1];
-      payload[4] = data[x][y][2];
+      payload[2] = r;
+      payload[3] = g;
+      payload[4] = b;
+
       mqttClient.publish(MQTT_DRAW_TOPIC, payload, sizeof(payload));
-      Serial.print(",");
+      Serial.print(",");              
+    } else {
+      Serial.print(".");
     }
-  }
+  });
   Serial.println();
 }
 
@@ -106,46 +96,15 @@ void drawSinglePixel(byte *message)
 {
   uint8_t x = message[0];
   uint8_t y = message[1];
-  uint16_t color = matrix.Color(message[2], message[3], message[4]);
 
-  if (x >= matrix.width() || y >= matrix.height())
-  {
-    Serial.printf("Invalid coordinates %d,%d\n", x, y);
-    return;
-  }
-
-  data[x][y][0] = message[2];
-  data[x][y][1] = message[3];
-  data[x][y][2] = message[4];
-
-  matrix.drawPixel(x, y, color);
-  matrix.show();
+  matrix.draw(x, y, message[2], message[3], message[4]);
 }
 
-void updateDataFrom565Value(uint8_t x, uint8_t y, uint16_t color) {
-  uint16_t r5 = (color & 0xf800) >> 11;
-  uint16_t g6 = (color & 0x07e0) >> 5;
-  uint16_t b5 = color & 0x001f;
 
-  uint8_t r8 = (r5 * 527 + 23) >> 6;
-  uint8_t g8 = (g6 * 259 + 33) >> 6;
-  uint8_t b8 = (b5 * 527 + 23) >> 6;
+void drawFullImage(const byte *message, size_t length) {
 
-  data[x][y][0] = r8;
-  data[x][y][1] = g8;
-  data[x][y][2] = b8;
-}
-
-void drawFullImage(const byte *message) {
-  const uint16_t *pixel = (const uint16_t*)message;
-  for (uint16_t y=0; y<matrix.height(); y++) {
-    for (uint16_t x=0; x<matrix.width(); x++) {
-      uint16_t color = pixel[(y*16) + x];
-      updateDataFrom565Value(x, y, color);
-      matrix.drawPixel(x, y, color);
-    }
-  }
-  matrix.show();
+  const uint16_t *image = (const uint16_t*)message;
+  matrix.draw565Image(image, length / 2);
 }
 
 void callback(char *topic, byte *message, unsigned int length)
@@ -158,7 +117,7 @@ void callback(char *topic, byte *message, unsigned int length)
     if (length == 5) {
       drawSinglePixel(message);
     } else if (length == 512) {
-      drawFullImage(message);
+      drawFullImage(message, length);
     } else {
       Serial.print("Wrong msg size: ");
       Serial.println(length);
@@ -265,11 +224,7 @@ void setup()
 {
   Serial.begin(115200);
 
-  matrix.begin();
-  matrix.setBrightness(30);
-  matrix.setRotation(1);
-  matrix.fill(0);
-  matrix.show();
+  matrix.init();
 
   startWifi();
   updateIfNeeded();
