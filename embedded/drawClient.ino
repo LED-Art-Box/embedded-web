@@ -8,10 +8,6 @@
 #include "matrix.h"
 #include "constants.h"
 
-#define PIN 4
-#define MATRIX_WIDTH 16
-#define MATRIX_HEIGHT 16
-
 #define MAX_MESSAGE_SIZE 768
 
 Matrix matrix;
