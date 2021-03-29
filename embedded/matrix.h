@@ -1,5 +1,5 @@
-#ifndef MATRIX_H
-#define MATRIX_H
+#ifndef MATRIX_H_
+#define MATRIX_H_
 
 #include <functional>
 
@@ -20,15 +20,15 @@ public:
     void draw(uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b);
     void draw565Image(const uint16_t *image, size_t size);
 
-    void foreach (std::function<void(uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b)> callback) const;
+    void foreach (const std::function<void(uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b)> &callback) const;
     uint8_t width() const;
     uint8_t height() const;
 
 private:
     void updateDataFrom565Value(uint8_t x, uint8_t y, uint16_t color);
 
-    Adafruit_NeoMatrix matrix;
-    uint8_t data[MATRIX_WIDTH][MATRIX_HEIGHT][3];
+    Adafruit_NeoMatrix matrix_;
+    uint8_t data_[MATRIX_WIDTH][MATRIX_HEIGHT][3];
 };
 
 #endif
