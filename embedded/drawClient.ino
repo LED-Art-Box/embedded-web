@@ -6,6 +6,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include "matrix.h"
+#include "mqtt.h"
 #include "constants.h"
 
 #define MAX_MESSAGE_SIZE 768
@@ -14,13 +15,14 @@ Matrix matrix;
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
+MQTTClient mqtt(mqttClient);
 String clientId;
+WiFiManager wifiManager;
 
 void startWifi()
 {
   Serial.println("Connecting Wifi");
 
-  WiFiManager wifiManager;
   wifiManager.setDebugOutput(false);
   wifiManager.setEnableConfigPortal(false);
   wifiManager.setTimeout(0);
@@ -70,15 +72,10 @@ void updateIfNeeded()
 void sync()
 {
   Serial.print("Sync: ");
-  uint8_t payload[5];
   matrix.foreach ([&](uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b) {
     if (r != 0 || g != 0 || b != 0)
     {
-      payload[0] = x;
-      payload[1] = y;
-      payload[2] = r;
-      payload[3] = g;
-      payload[4] = b;
+      uint8_t payload[5] = {x, y, r, g, b};
 
       mqttClient.publish(MQTT_DRAW_TOPIC, payload, sizeof(payload));
       Serial.print(",");
@@ -91,79 +88,61 @@ void sync()
   Serial.println();
 }
 
-void drawSinglePixel(byte *message)
+struct DrawMessage
 {
-  uint8_t x = message[0];
-  uint8_t y = message[1];
+  union
+  {
+    struct
+    {
+      uint8_t x;
+      uint8_t y;
+      uint8_t r;
+      uint8_t g;
+      uint8_t b;
+    };
+    uint8_t payload[5];
+  };
+};
 
-  matrix.draw(x, y, message[2], message[3], message[4]);
+void drawSinglePixel(const byte *payload)
+{
+  auto *msg = (const DrawMessage *)payload;
+  matrix.draw(msg->x, msg->y, msg->r, msg->g, msg->b);
 }
 
 void drawFullImage(const byte *message, size_t length)
 {
-
   const uint16_t *image = (const uint16_t *)message;
   matrix.draw565Image(image, length / 2);
 }
 
-void callback(char *topic, byte *message, unsigned int length)
+void subscribe_topics()
 {
-  Serial.print("Message arrived on topic: ");
-  Serial.println(topic);
-
-  if (strcmp(topic, MQTT_DRAW_TOPIC) == 0)
-  {
-    if (length == 5)
+  mqtt.subscribe(MQTT_DRAW_TOPIC, [](const char *, const ByteArrayWrapper &payload) {
+    if (payload.length == 5)
     {
-      drawSinglePixel(message);
+      drawSinglePixel(payload.data);
     }
-    else if (length == 512)
+    else if (payload.length == 512)
     {
-      drawFullImage(message, length);
+      drawFullImage(payload.data, payload.length);
+      Serial.printf("Free heap: %d\n", ESP.getFreeHeap());
     }
     else
     {
       Serial.print("Wrong msg size: ");
-      Serial.println(length);
+      Serial.println(payload.length);
       return;
     }
-  }
-  else if (strcmp(topic, MQTT_CONNECT_TOPIC) == 0)
-  {
-    sync();
-  }
-  else if (strcmp(topic, MQTT_UPDATE_TOPIC) == 0)
-  {
-    update();
-  }
-  else
-  {
-    Serial.print("Wrong topic?! ");
-    Serial.println(topic);
-  }
-}
+  });
 
-void reconnect()
-{
-  while (!mqttClient.connected())
-  {
-    Serial.print("Attempting MQTT connection...");
-    if (mqttClient.connect(clientId.c_str()))
-    {
-      Serial.println("connected");
-      mqttClient.subscribe(MQTT_DRAW_TOPIC);
-      mqttClient.subscribe(MQTT_CONNECT_TOPIC);
-      mqttClient.subscribe(MQTT_UPDATE_TOPIC);
-      sync();
-    }
-    else
-    {
-      Serial.print("failed, rc=");
-      Serial.print(mqttClient.state());
-      Serial.println(" try again in 5 seconds");
-      delay(5000);
-    }
-  }
+  mqtt.subscribe(MQTT_CONNECT_TOPIC, [](const char *, const ByteArrayWrapper &) {
+    sync();
+  });
+
+  mqtt.subscribe(MQTT_UPDATE_TOPIC, [](const char *, const ByteArrayWrapper &) {
+    update();
+  });
 }
 
 String followRedirect(String url, int count, int times)
@@ -233,20 +212,17 @@ void setup()
   startWifi();
   updateIfNeeded();
 
-  String clientId = "ESP32Client-";
-  clientId += String(random(0xffff), HEX);
+  Serial.printf("%08X\n", chip_id());
 
-  uint16_t port = atoi(MQTT_BROKER_PORT);
-  mqttClient.setServer(MQTT_BROKER_HOST, port);
-  mqttClient.setCallback(callback);
-  mqttClient.setBufferSize(MAX_MESSAGE_SIZE);
+  mqtt.on_connect([]() {
+    sync();
+  });
+  subscribe_topics();
+
+  mqtt.connect();
 }
 
 void loop()
 {
-  if (!mqttClient.connected())
-  {
-    reconnect();
-  }
-  mqttClient.loop();
+  mqtt.loop();
 }
